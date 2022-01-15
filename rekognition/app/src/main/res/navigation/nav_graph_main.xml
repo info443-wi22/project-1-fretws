@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shane Fretwell: I believe Tom wrote this file -->
+<navigation
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/MainFragment"
+    >
+    <fragment
+        android:id="@+id/MainFragment"
+        android:label="@string/main_label"
+        android:name="edu.uw.minh2804.rekognition.fragments.MainFragment"
+        tools:layout="@layout/fragment_main"
+        />
+</navigation>

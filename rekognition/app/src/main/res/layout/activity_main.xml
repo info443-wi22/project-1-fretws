@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--android:fitsSystemWindows is from https://guides.codepath.com/android/using-the-app-toolbar -->
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:fitsSystemWindows="true"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    tools:context=".MainActivity"
+    >
+    <include
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        layout="@layout/toolbar"
+        />
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/fragment_container_main_host"
+        android:layout_alignParentBottom="true"
+        android:layout_below="@+id/toolbar"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:name="androidx.navigation.fragment.NavHostFragment"
+        app:defaultNavHost="true"
+        app:navGraph="@navigation/nav_graph_main"
+        />
+</RelativeLayout>
