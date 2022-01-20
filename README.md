@@ -9,5 +9,6 @@ This code base is for an Android Application called 'Rekognition.' Developed by 
 ![architecture diagram](/imgs/Detailed_Architecture.png)
 
 ## Sequence diagram showing how an image of text goes from being captured by the user to being read aloud:
-<img src="https://user-images.githubusercontent.com/62970170/150383233-6d5f1bfc-9510-489e-bfdf-7942a73f9eaf.png" width="1600" height="1080">
+Using an img tag with a width of 1600px and a height of 1080px did not change the readability of the diagram. Instead, click on the image to get a better viewing experience.
+<!-- <img src="https://user-images.githubusercontent.com/62970170/150383233-6d5f1bfc-9510-489e-bfdf-7942a73f9eaf.png" width="1600" height="1080"> -->
 ![architecture diagram](/imgs/Image_Capture_Sequence.png)
