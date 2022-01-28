@@ -8,9 +8,11 @@ import com.google.gson.JsonPrimitive
 
 // This is a builder class to build the http request body for the object recognition Firebase's function.
 object ObjectRecognitionRequest {
+    private const val requestDescriptor = "LABEL_DETECTION"
+    private const val maxNumberLabels = 3
     private val feature = JsonObject().also {
-        it.add("type", JsonPrimitive("LABEL_DETECTION"))
-        it.add("maxResults", JsonPrimitive(3))
+        it.add("type", JsonPrimitive(requestDescriptor))
+        it.add("maxResults", JsonPrimitive(maxNumberLabels))
     }
     private val features = JsonArray().also { it.add(feature) }
 

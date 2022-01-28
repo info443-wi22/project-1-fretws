@@ -5,6 +5,7 @@ package edu.uw.minh2804.rekognition.services
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.Parcelable
+import android.util.Log
 import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
@@ -23,7 +24,7 @@ interface Annotator {
     // Gets a unique identifier of the type of annotation this Annotator provides
     fun getType(context: Context): String
     // Formats the annotation response into a string, if the response is valid
-    fun onAnnotated(result: AnnotateImageResponse): String?
+    fun onAnnotated(result: AnnotateImageResponse): String? // REFACTOR if storing formatted results, then don't need to have separate annotate and onAnnotated methods
     // Annotates an image with a description, formatted in an AnnotateImageResponse
     suspend fun annotate(image: Bitmap): AnnotateImageResponse
 }
@@ -39,6 +40,7 @@ object FirebaseFunctionsService {
             // The string resource labelling each tab in the camera activity is a unique identifier
             // of the endpoint, and is widely accessible across the code base.
             override fun getType(context: Context): String {
+                // REFACTOR: use the tab position in the accessibility fragment as the single point of change?
                 return context.getString(R.string.tab_item_text_annotation)
             }
 
@@ -68,19 +70,22 @@ object FirebaseFunctionsService {
     }
 
     // Communicates with the Firebase image annotation API while being agnostic of the annotations requested
-    private suspend fun requestAnnotation(body: JsonObject): AnnotateImageResponse {
+    private suspend fun requestAnnotation(requestBody: JsonObject): AnnotateImageResponse {
         if (!FirebaseAuthService.isAuthenticated()) {
             FirebaseAuthService.signIn()
         }
         val result = suspendCoroutine<JsonElement> { continuation ->
             functions
                 .getHttpsCallable("annotateImage")
-                .call(body.toString())
-                .addOnSuccessListener {
-                    continuation.resume(JsonParser.parseString(Gson().toJson(it.data)))
+                .call(requestBody.toString())
+                .addOnSuccessListener { successfulResponse ->
+                    continuation.resume(JsonParser.parseString(Gson().toJson(successfulResponse.data)))
                 }
-                .addOnFailureListener { continuation.resumeWithException(it) }
+                .addOnFailureListener { exception ->
+                    continuation.resumeWithException(exception)
+                }
         }
+        // REFACTOR: use variable that describes what the first entry is -> the entry for the first and only image
         return Gson().fromJson(result.asJsonArray.first(), AnnotateImageResponse::class.java)
     }
 }

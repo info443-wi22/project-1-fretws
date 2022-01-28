@@ -45,7 +45,7 @@ class AccessibilityFragment : Fragment(R.layout.fragment_accessibility) {
         // 'Object'
         captureButton.setOnClickListener {
             when (optionsTab.selectedTabPosition) {
-                0 -> takePhoto(FirebaseFunctionsService.Annotator.TEXT)
+                0 -> takePhoto(FirebaseFunctionsService.Annotator.TEXT) // REFACTOR was supposed to use tab string resource to maintain the fact that there is only one way to reference which tab is active/which endpoint should be called
                 1 -> takePhoto(FirebaseFunctionsService.Annotator.OBJECT)
                 else -> Log.e(TAG, "Selected tab not found")
             }

@@ -8,7 +8,8 @@ import com.google.gson.JsonPrimitive
 
 // This is a builder class to build the http request body for the text recognition Firebase's function.
 object TextRecognitionRequest {
-    private val feature = JsonObject().also { it.add("type", JsonPrimitive("TEXT_DETECTION")) }
+    private const val requestDescriptor = "TEXT_DETECTION"
+    private val feature = JsonObject().also { it.add("type", JsonPrimitive(requestDescriptor)) }
     private val features = JsonArray().also { it.add(feature) }
 
     private val languageHints = JsonArray().also { it.add("en") }

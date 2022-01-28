@@ -66,7 +66,7 @@ class AnnotationFragment : Fragment(R.layout.fragment_annotation) {
                     val formattedResult = output.requestAnnotator.onAnnotated(result)
                     if (formattedResult != null) {
                         model.onImageAnnotated(formattedResult)
-                        annotationStore.save(id, Annotation(result))
+                        annotationStore.save(id, Annotation(result)) // REFACTOR why storing an unformatted result instead of formatted result?
                     } else {
                         val errorToDisplay = getString(
                             R.string.camera_output_result_not_found,
