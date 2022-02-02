@@ -4,16 +4,13 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import edu.uw.minh2804.rekognition.services.AnnotateImageResponse
 import edu.uw.minh2804.rekognition.services.FirebaseAuthService
 import edu.uw.minh2804.rekognition.services.FirebaseFunctionsService
 import edu.uw.minh2804.rekognition.services.ObjectRecognitionRequest
 import io.mockk.*
 import io.mockk.every
-import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.Assert.*
-import org.junit.Before
 import org.mockito.Mockito
 
 class MockkElementsTestSuite {
@@ -22,16 +19,27 @@ class MockkElementsTestSuite {
     }
 
     object FirebaseWrapper {
-        //        private val reqs = ObjectRecognitionRequest
-        private val funcs = FirebaseFunctionsService
+        val num = 5
+
         fun add(a: Int, b: Int) = a + b
+        fun subtract5(a: Int) = sub(a, 5)
+        fun subtract_numFrom(a: Int) = sub(a, _num)
+        fun return_reqs() = _reqs
+
+        private val _num
+            get() = 10
+        private fun sub(a: Int, b: Int) = a - b
+
+        private val _reqs
+            get() = ObjectRecognitionRequest
+//        private val _funcs = FirebaseFunctionsService
     }
 
     @Test
     fun mockkFirebaseWrapper() {
-//        val obj = mockk<ObjBeingMocked>(relaxed = true)
         val obj = spyk<FirebaseWrapper>()
 
+        // Mock that passes through to original function
         every {
             obj.add(any(), any())
         } answers {callOriginal()}
@@ -40,6 +48,7 @@ class MockkElementsTestSuite {
             3, obj.add(1, 2)
         )
 
+        // Specific mock parameters return non-default behavior
         every {
             obj.add(1, 2)
         } returns 55
@@ -47,6 +56,35 @@ class MockkElementsTestSuite {
         assertEquals(
             55, obj.add(1, 2)
         )
+
+        // Mock a private function
+        every {
+            obj["sub"](ofType(Int::class), 5)
+        } returns 100
+
+        // subtract5 calls the mocked private function
+        assertEquals(100, obj.subtract5(12))
+
+        // Mock a public property
+        every {
+            obj getProperty "num"
+        } returns 33
+
+        assertEquals(33, obj.num)
+
+        // Mock a private property
+        every {
+            obj getProperty "_num"
+        } returns 22
+
+        assertEquals(10, obj.subtract_numFrom(32))
+
+        // Mock an object property
+        every {
+            obj getProperty "_reqs"
+        } returns null
+
+        assertNull(obj.return_reqs())
     }
 
     @Test
@@ -82,20 +120,20 @@ class MockkElementsTestSuite {
         )
     }
 
-    @Test
-    fun requestAnnotation_canBeMocked() {
-        mockkObject(FirebaseFunctionsService)
-        val expectedOutput = AnnotateImageResponse(null, TestUtils.realObjectRecognitionData)
-        coEvery {
-            FirebaseFunctionsService.requestAnnotation(any())
-        } returns expectedOutput
-        val emptyRequest = ObjectRecognitionRequest.createRequest("")
-        lateinit var mockedAnnotation: AnnotateImageResponse
-        runBlocking {
-            mockedAnnotation = FirebaseFunctionsService.requestAnnotation(emptyRequest)
-        }
-        assertEquals(mockedAnnotation, expectedOutput)
-    }
+//    @Test
+//    fun requestAnnotation_canBeMocked() {
+//        mockkObject(FirebaseFunctionsService)
+//        val expectedOutput = AnnotateImageResponse(null, TestUtils.realObjectRecognitionData)
+//        coEvery {
+//            FirebaseFunctionsService.requestAnnotation(any())
+//        } returns expectedOutput
+//        val emptyRequest = ObjectRecognitionRequest.createRequest("")
+//        lateinit var mockedAnnotation: AnnotateImageResponse
+//        runBlocking {
+//            mockedAnnotation = FirebaseFunctionsService.requestAnnotation(emptyRequest)
+//        }
+//        assertEquals(mockedAnnotation, expectedOutput)
+//    }
 
     @Test
     fun firebaseAuth_withMockkObject() {
