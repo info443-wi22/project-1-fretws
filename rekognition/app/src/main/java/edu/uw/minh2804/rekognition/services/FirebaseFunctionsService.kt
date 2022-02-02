@@ -32,6 +32,9 @@ interface Annotator {
 // This service is responsible for invoking web requests to Firebase.
 object FirebaseFunctionsService {
     private val functions = Firebase.functions
+    // Coding in a getter instead of a default value makes this object testable by mockk
+//    private val functions
+//        get() = Firebase.functions
 
     // This enum class encapsulates the differences between the text and object recognition
     // endpoints, allowing for code referencing these endpoints to be agnostic of these differences
@@ -79,7 +82,9 @@ object FirebaseFunctionsService {
                 .getHttpsCallable("annotateImage")
                 .call(requestBody.toString())
                 .addOnSuccessListener { successfulResponse ->
-                    continuation.resume(JsonParser.parseString(Gson().toJson(successfulResponse.data)))
+                    continuation.resume(
+                        JsonParser.parseString(Gson().toJson(successfulResponse.data))
+                    )
                 }
                 .addOnFailureListener { exception ->
                     continuation.resumeWithException(exception)
