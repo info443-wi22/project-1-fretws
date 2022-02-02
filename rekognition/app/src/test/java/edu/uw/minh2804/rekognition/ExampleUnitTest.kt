@@ -1,17 +1,13 @@
 package edu.uw.minh2804.rekognition
 
-import com.google.firebase.auth.FirebaseAuth
 import edu.uw.minh2804.rekognition.services.AnnotateImageResponse
 import edu.uw.minh2804.rekognition.services.EntityAnnotation
 import edu.uw.minh2804.rekognition.services.FirebaseAuthService
 import edu.uw.minh2804.rekognition.services.FirebaseFunctionsService
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
 import org.junit.Assert.*
-import org.mockito.Mock
-import org.mockito.Mockito
-import org.mockito.Mockito.`when`
-import org.mockito.Mockito.mock
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -22,6 +18,17 @@ class ExampleUnitTest {
     @Test
     fun addition_isCorrect() {
         assertEquals(4, 2 + 2)
+    }
+}
+
+class FirebaseAuthenticationServiceTestSuite {
+    @Test
+    fun isAuthenticated_correctReturn_signedOut() = assertFalse(FirebaseAuthService.isAuthenticated())
+
+    @Test
+    fun isAuthenticated_correctReturn_signedIn() {
+        runBlocking { FirebaseAuthService.signIn() }
+        assertTrue(FirebaseAuthService.isAuthenticated())
     }
 }
 
@@ -50,19 +57,19 @@ class FirebaseFunctionsServiceTestSuite {
         val annotator = FirebaseFunctionsService.Annotator.OBJECT
 
         @Test
-        fun onAnnotated_returnsExpectedFormat_normalCase() = assertObjectResponse(
+        fun onAnnotated_returnsExpectedFormat_normalCase() = assertObjectResponseFormatsToString(
             TestUtils.realObjectRecognitionData,
             TestUtils.realObjectRecognitionData.joinToString{ it.description }
         )
 
         @Test
-        fun onAnnotated_returnsExpectedFormat_emptyCase() = assertObjectResponse(listOf(), null)
+        fun onAnnotated_returnsExpectedFormat_emptyCase() = assertObjectResponseFormatsToString(listOf(), null)
 
-        private fun assertObjectResponse(objectAnnotations: List<EntityAnnotation>, expected: String?) {
+        private fun assertObjectResponseFormatsToString(objectAnnotations: List<EntityAnnotation>, expectedString: String?) {
             val actualLabelsReadyForDisplay = annotator.onAnnotated(
                 AnnotateImageResponse(null, objectAnnotations)
             )
-            assertEquals(actualLabelsReadyForDisplay, expected)
+            assertEquals(actualLabelsReadyForDisplay, expectedString)
         }
     }
 }
