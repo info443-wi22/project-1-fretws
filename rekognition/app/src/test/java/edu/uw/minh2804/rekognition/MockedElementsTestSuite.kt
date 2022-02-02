@@ -33,9 +33,9 @@ class MockkElementsTestSuite {
 
         private val _reqs
             get() = ObjectRecognitionRequest
-        private val _funcs = FirebaseFunctionsService
-//        private val _funcs
-//            get() = FirebaseFunctionsService
+//        private val _funcs = FirebaseFunctionsService
+        private val _funcs
+            get() = FirebaseFunctionsService
     }
 
     @Test
@@ -90,11 +90,11 @@ class MockkElementsTestSuite {
         assertNull(obj.return_reqs())
 
         // Mock a private firebase property
-//        every {
-//            obj getProperty "_funcs"
-//        } returns null
-//
-//        assertNull(obj.return_funcs())
+        every {
+            obj getProperty "_funcs"
+        } returns null
+
+        assertNull(obj.return_funcs())
     }
 
     @Test
