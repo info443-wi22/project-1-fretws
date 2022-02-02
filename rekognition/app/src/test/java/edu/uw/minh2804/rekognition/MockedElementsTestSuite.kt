@@ -25,6 +25,7 @@ class MockkElementsTestSuite {
         fun subtract5(a: Int) = sub(a, 5)
         fun subtract_numFrom(a: Int) = sub(a, _num)
         fun return_reqs() = _reqs
+        fun return_funcs() = _funcs
 
         private val _num
             get() = 10
@@ -32,7 +33,9 @@ class MockkElementsTestSuite {
 
         private val _reqs
             get() = ObjectRecognitionRequest
-//        private val _funcs = FirebaseFunctionsService
+        private val _funcs = FirebaseFunctionsService
+//        private val _funcs
+//            get() = FirebaseFunctionsService
     }
 
     @Test
@@ -79,12 +82,19 @@ class MockkElementsTestSuite {
 
         assertEquals(10, obj.subtract_numFrom(32))
 
-        // Mock an object property
+        // Mock a private object property
         every {
             obj getProperty "_reqs"
         } returns null
 
         assertNull(obj.return_reqs())
+
+        // Mock a private firebase property
+//        every {
+//            obj getProperty "_funcs"
+//        } returns null
+//
+//        assertNull(obj.return_funcs())
     }
 
     @Test
