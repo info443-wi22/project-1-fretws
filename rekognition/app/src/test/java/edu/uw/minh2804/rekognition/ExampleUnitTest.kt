@@ -1,9 +1,13 @@
 package edu.uw.minh2804.rekognition
 
-import edu.uw.minh2804.rekognition.services.AnnotateImageResponse
-import edu.uw.minh2804.rekognition.services.EntityAnnotation
-import edu.uw.minh2804.rekognition.services.FirebaseAuthService
-import edu.uw.minh2804.rekognition.services.FirebaseFunctionsService
+import android.graphics.Bitmap
+import com.google.gson.JsonObject
+import edu.uw.minh2804.rekognition.extensions.toString64
+import edu.uw.minh2804.rekognition.services.*
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.spyk
+import io.mockk.unmockkAll
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
@@ -46,10 +50,42 @@ class FirebaseFunctionsServiceTestSuite {
         fun onAnnotated_returnsExpectedFormat_nullCase() = assertTextResponse(null)
 
         private fun assertTextResponse(textResponseToTest: String?) {
-            val textAnnotationResponse = TestUtils.ExampleTextAnnotationResponse(textResponseToTest)
+            val textAnnotationResponse = TestUtils.TextAnnotationResponseWrapper(textResponseToTest)
             val actualTextReadyForDisplay = annotator.onAnnotated(textAnnotationResponse.rawTextAnnotatedResponse)
             val expectedTextReadyForDisplay = textAnnotationResponse.expectedTextReadyForDisplay
             assertEquals(actualTextReadyForDisplay, expectedTextReadyForDisplay)
+        }
+
+        @Test
+        // Caution: This test is not sensitive to changes in the toString64 extension of the Bitmap
+        // class, whereas the real annotate method is sensitive to these changes
+        fun annotate_passesCorrectJson() {
+            val bitmap = mockk<Bitmap>()
+//            val bitmap = mockk(TestUtils.smallBitmap)
+            every {
+                // toString64 is an extension of the bitmap class and should be tested outside of
+                // this test suite, because it is technically subject to change
+                bitmap.toString64()
+            } returns TestUtils.base64EncodedImage
+
+            val functionsService = spyk<FirebaseFunctionsService>()
+            val expectedAnnotationResponseWrapper = TestUtils.TextAnnotationResponseWrapper()
+            every {
+                functionsService["requestAnnotation"](ofType(JsonObject::class))
+            } returns expectedAnnotationResponseWrapper
+
+            // Assert that annotate Returns the right annotation
+            val actualAnnotationResponse = runBlocking {
+                annotator.annotate(bitmap)
+            }
+
+            assertEquals(actualAnnotationResponse, expectedAnnotationResponseWrapper.rawTextAnnotatedResponse)
+
+            // Verify that requestAnnotation receives the right input
+
+            // Verify that the firebase functions are called with an annotateImage request
+
+            unmockkAll()
         }
     }
 
