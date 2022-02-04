@@ -72,7 +72,7 @@ object FirebaseFunctionsService {
     }
 
     // Communicates with the Firebase image annotation API while being agnostic of the annotations requested
-    private suspend fun requestAnnotation(requestBody: JsonObject): AnnotateImageResponse {
+    internal suspend fun requestAnnotation(requestBody: JsonObject): AnnotateImageResponse {
         if (!FirebaseAuthService.isAuthenticated()) {
             FirebaseAuthService.signIn()
         }
