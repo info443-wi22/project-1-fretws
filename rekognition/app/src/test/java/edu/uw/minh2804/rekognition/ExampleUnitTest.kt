@@ -8,11 +8,20 @@ import edu.uw.minh2804.rekognition.extensions.toString64
 import edu.uw.minh2804.rekognition.services.*
 import io.mockk.*
 import io.mockk.every
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.TestCoroutineDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.setMain
 import org.junit.Test
 
 import org.junit.Assert.*
 import org.junit.Rule
+import org.junit.rules.TestWatcher
+import org.junit.runner.Description
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -37,6 +46,7 @@ class FirebaseAuthenticationServiceTestSuite {
     }
 }
 
+@ExperimentalCoroutinesApi
 class FirebaseFunctionsServiceTestSuite {
     class TextAnnotatorTestSuite {
         val annotator = FirebaseFunctionsService.Annotator.TEXT
@@ -86,13 +96,13 @@ class FirebaseFunctionsServiceTestSuite {
             }
         }
 
-//        @get:Rule
-//        val schedulers = RxImmediateSchedulerRule()
+        @get:Rule
+        var coroutinesTestRule = CoroutineTestRule()
 
         @Test
         // Caution: This test is not sensitive to changes in the toString64 extension of the Bitmap
         // class, whereas the real annotate method is sensitive to these changes
-        fun annotate_passesCorrectJson() {
+        fun annotate_passesCorrectJson() = coroutinesTestRule.testDispatcher.runBlockingTest {
             mockkStatic(Base64::class)
             every { Base64.encodeToString(any(), any()) } returns TestUtils.base64EncodedImage
 //            val bitmap = spyk<Bitmap>()
@@ -155,6 +165,27 @@ class FirebaseFunctionsServiceTestSuite {
                 AnnotateImageResponse(null, objectAnnotations)
             )
             assertEquals(expectedString, actualLabelsReadyForDisplay)
+        }
+    }
+
+    @ExperimentalCoroutinesApi
+    class CoroutineTestRule(val testDispatcher: TestCoroutineDispatcher = TestCoroutineDispatcher()) : TestWatcher() {
+        val testDispatcherProvider = object : TestUtils.DispatcherProvider {
+            override fun default(): CoroutineDispatcher = testDispatcher
+            override fun io(): CoroutineDispatcher = testDispatcher
+            override fun main(): CoroutineDispatcher = testDispatcher
+            override fun unconfined(): CoroutineDispatcher = testDispatcher
+        }
+
+        override fun starting(description: Description?) {
+            super.starting(description)
+            Dispatchers.setMain(testDispatcher)
+        }
+
+        override fun finished(description: Description?) {
+            super.finished(description)
+            Dispatchers.resetMain()
+            testDispatcher.cleanupTestCoroutines()
         }
     }
 }

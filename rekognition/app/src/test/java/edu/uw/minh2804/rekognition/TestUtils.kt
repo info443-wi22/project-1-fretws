@@ -6,6 +6,8 @@ import edu.uw.minh2804.rekognition.services.EntityAnnotation
 import edu.uw.minh2804.rekognition.services.TextAnnotation
 import android.graphics.BitmapFactory
 import android.util.Base64
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 
 
 class TestUtils {
@@ -29,4 +31,15 @@ class TestUtils {
         private val labelAnnotations = List<EntityAnnotation>(size = 0, init = {EntityAnnotation("", 0.0)})
         val rawTextAnnotatedResponse = AnnotateImageResponse(fullTextAnnotation, labelAnnotations)
     }
+
+    interface DispatcherProvider {
+
+        fun main(): CoroutineDispatcher = Dispatchers.Main
+        fun default(): CoroutineDispatcher = Dispatchers.Default
+        fun io(): CoroutineDispatcher = Dispatchers.IO
+        fun unconfined(): CoroutineDispatcher = Dispatchers.Unconfined
+
+    }
+
+    class DefaultDispatcherProvider : DispatcherProvider
 }
