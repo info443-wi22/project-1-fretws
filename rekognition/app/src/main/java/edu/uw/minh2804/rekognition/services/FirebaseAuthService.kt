@@ -16,7 +16,9 @@ import kotlin.coroutines.suspendCoroutine
 // This service is responsible for handling all of the authentication with Firebase, required when
 // using Firebase functions
 object FirebaseAuthService {
-    private val AUTH = Firebase.auth
+    // Coding in a getter instead of a initial value makes this object mockable by mockk
+    private val AUTH
+        get() = Firebase.auth
 
     suspend fun signIn(): AuthResult {
         Log.v("FirebaseAuthService", "Logging from signIn()")

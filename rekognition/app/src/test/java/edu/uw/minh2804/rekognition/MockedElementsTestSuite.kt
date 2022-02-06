@@ -9,9 +9,12 @@ import edu.uw.minh2804.rekognition.services.FirebaseFunctionsService
 import edu.uw.minh2804.rekognition.services.ObjectRecognitionRequest
 import io.mockk.*
 import io.mockk.every
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.Assert.*
 import org.mockito.Mockito
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class MockkElementsTestSuite {
     object ObjBeingMocked {
@@ -26,6 +29,13 @@ class MockkElementsTestSuite {
         fun subtract_numFrom(a: Int) = sub(a, _num)
         fun return_reqs() = _reqs
         fun return_funcs() = _funcs
+        suspend fun suspendFun(except: Boolean = false): Int {
+            val result = suspendCoroutine<Int> { continuation ->
+                Thread.sleep(1000)
+                continuation.resume(15)
+            }
+            return result
+        }
 
         private val _num
             get() = 10
@@ -95,6 +105,13 @@ class MockkElementsTestSuite {
         } returns null
 
         assertNull(obj.return_funcs())
+
+        coEvery {
+            obj.suspendFun()
+        } returns 2
+
+        val suspendActual = runBlocking {obj.suspendFun()}
+        assertEquals(2, suspendActual)
     }
 
     @Test

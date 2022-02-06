@@ -31,7 +31,7 @@ interface Annotator {
 
 // This service is responsible for invoking web requests to Firebase.
 object FirebaseFunctionsService {
-    // Coding in a getter instead of a initial value makes this object testable by mockk
+    // Coding in a getter instead of a initial value makes this object mockable by mockk
     private val functions
         get() = Firebase.functions
 
@@ -50,9 +50,11 @@ object FirebaseFunctionsService {
                 return result.fullTextAnnotation?.text
             }
 
-            override suspend fun annotate(image: Bitmap) = requestAnnotation(
-                TextRecognitionRequest.createRequest(image.toString64())
-            )
+            override suspend fun annotate(image: Bitmap): AnnotateImageResponse {
+                val base64StringifiedImage = image.toString64()
+                val request = TextRecognitionRequest.createRequest(base64StringifiedImage)
+                return requestAnnotation(request)
+            }
         },
         OBJECT {
             override fun getType(context: Context): String {
