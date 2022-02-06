@@ -44,6 +44,6 @@ class TestUtils {
     class TextAnnotationResponseWrapper(val expectedTextReadyForDisplay: String? = realTextRecognitionData) {
         private val fullTextAnnotation = expectedTextReadyForDisplay?.let {TextAnnotation(it)}
         private val labelAnnotations = List<EntityAnnotation>(size = 0, init = {EntityAnnotation("", 0.0)})
-        val rawTextAnnotatedResponse = AnnotateImageResponse(fullTextAnnotation, labelAnnotations)
+        internal val rawTextAnnotatedResponse = AnnotateImageResponse(fullTextAnnotation, labelAnnotations)
     }
 }
