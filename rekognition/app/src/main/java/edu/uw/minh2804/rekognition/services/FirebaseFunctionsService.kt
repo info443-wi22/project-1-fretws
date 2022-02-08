@@ -91,8 +91,22 @@ object FirebaseFunctionsService {
                     continuation.resumeWithException(exception)
                 }
         }
+        return formatAnnotationResult(result)
+    }
+
+    // REFACTOR: This was added for testing purposes
+    internal fun formatAnnotationResult(result: JsonElement): AnnotateImageResponse {
         // REFACTOR: use variable that describes what the first entry is -> the entry for the first and only image
-        return Gson().fromJson(result.asJsonArray.first(), AnnotateImageResponse::class.java)
+        // REFACTOR: null safety was added here
+        val nullableDataResponse = Gson().fromJson(result.asJsonArray.first(), AnnotateImageResponse::class.java)
+        // Gson is able to break the null safety of the AnnotateImageResponse labelAnnotations parameter,
+        // so we should repair that null safety immediately
+        val nonNullable = AnnotateImageResponse(
+            fullTextAnnotation = nullableDataResponse.fullTextAnnotation,
+            labelAnnotations = nullableDataResponse.labelAnnotations
+                ?: List<EntityAnnotation>(size = 0, init = {EntityAnnotation("", 0.0)})
+        )
+        return nonNullable
     }
 }
 

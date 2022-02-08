@@ -8,7 +8,6 @@ import edu.uw.minh2804.rekognition.extensions.toString64
 import edu.uw.minh2804.rekognition.services.*
 import io.mockk.*
 import io.mockk.every
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
@@ -19,25 +18,6 @@ import org.junit.Assert.*
  *
  * See [testing documentation](http://d.android.com/tools/testing).
  */
-class ExampleUnitTest {
-    @Test
-    fun addition_isCorrect() {
-        assertEquals(4, 2 + 2)
-    }
-}
-
-class FirebaseAuthenticationServiceTestSuite {
-    @Test
-    fun isAuthenticated_correctReturn_signedOut() = assertFalse(FirebaseAuthService.isAuthenticated())
-
-    @Test
-    fun isAuthenticated_correctReturn_signedIn() {
-        runBlocking { FirebaseAuthService.signIn() }
-        assertTrue(FirebaseAuthService.isAuthenticated())
-    }
-}
-
-@ExperimentalCoroutinesApi
 class FirebaseFunctionsServiceTestSuite {
     class TextAnnotatorTestSuite {
         val annotator = FirebaseFunctionsService.Annotator.TEXT
@@ -62,6 +42,13 @@ class FirebaseFunctionsServiceTestSuite {
         // Caution: This test is not sensitive to changes in the toString64 extension of the Bitmap
         // class, whereas the real annotate method is sensitive to these changes
         fun annotate_passesCorrectJson() = assertAnnotatorPassesCorrectJson(annotator, TestUtils.Endpoint.TEXT)
+
+        @Test
+        fun formatAnnotationResult_formatsCorrectly() {
+            val actualFormattedResponse = FirebaseFunctionsService.formatAnnotationResult(TestUtils.Endpoint.TEXT.exampleJsonResponse)
+            val expectedFormattedResponse = TestUtils.Endpoint.TEXT.exampleImageAnnotation
+            assertEquals(expectedFormattedResponse, actualFormattedResponse)
+        }
     }
 
     class ObjectAnnotatorTestSuite {
@@ -87,6 +74,13 @@ class FirebaseFunctionsServiceTestSuite {
         // Caution: This test is not sensitive to changes in the toString64 extension of the Bitmap
         // class, whereas the real annotate method is sensitive to these changes
         fun annotate_passesCorrectJson() = assertAnnotatorPassesCorrectJson(annotator, TestUtils.Endpoint.OBJECT)
+
+        @Test
+        fun formatAnnotationResult_formatsCorrectly() {
+            val actualFormattedResponse = FirebaseFunctionsService.formatAnnotationResult(TestUtils.Endpoint.OBJECT.exampleJsonResponse)
+            val expectedFormattedResponse = TestUtils.Endpoint.OBJECT.exampleImageAnnotation
+            assertEquals(expectedFormattedResponse, actualFormattedResponse)
+        }
     }
 
     companion object {
@@ -112,22 +106,15 @@ class FirebaseFunctionsServiceTestSuite {
             assertTrue(FirebaseAuthService.isAuthenticated())
 
             mockkObject(FirebaseFunctionsService)
-            val slot = slot<JsonObject>()
-            val annotateImageResponse = when (endpoint) {
-                TestUtils.Endpoint.OBJECT ->
-                    AnnotateImageResponse(null, TestUtils.realObjectRecognitionData)
-                TestUtils.Endpoint.TEXT ->
-                    TestUtils.TextAnnotationResponseWrapper().rawTextAnnotatedResponse
-
-            }
+            val requestAnnotationArgument = slot<JsonObject>()
 
             coEvery {
                 FirebaseFunctionsService.requestAnnotation(
-                    requestBody = capture(slot)
+                    requestBody = capture(requestAnnotationArgument)
                 )
             } answers {
-                println(slot.captured)
-                annotateImageResponse
+                println(requestAnnotationArgument.captured)
+                endpoint.exampleImageAnnotation
             }
 
             // Assert that annotate Returns the right annotation
@@ -140,9 +127,8 @@ class FirebaseFunctionsServiceTestSuite {
                 FirebaseFunctionsService.requestAnnotation(any())
             }
 
-            // Assert that requestAnnotation receives the right input
-            TestUtils.assertJSONFormat(
-                json = slot.captured,
+            TestUtils.assertJSONFormatAndContents(
+                json = requestAnnotationArgument.captured,
                 expectedContent = TestUtils.base64EncodedImage,
                 endpoint = endpoint
             )
