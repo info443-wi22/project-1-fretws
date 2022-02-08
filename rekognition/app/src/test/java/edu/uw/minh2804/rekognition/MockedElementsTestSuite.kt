@@ -43,7 +43,6 @@ class MockkElementsTestSuite {
 
         private val _reqs
             get() = ObjectRecognitionRequest
-//        private val _funcs = FirebaseFunctionsService
         private val _funcs
             get() = FirebaseFunctionsService
     }
