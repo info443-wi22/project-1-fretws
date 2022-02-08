@@ -13,36 +13,43 @@ import org.junit.Test
 
 import org.junit.Assert.*
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
 
-@DisplayName("Testing Text Annotator Endpoint...")
+@DisplayName("Text Annotator Endpoint")
 class TextAnnotatorTestSuite {
     private val textAnnotator = FirebaseFunctionsService.Annotator.TEXT
 
-    @Test
-    fun onAnnotated_returnsExpectedFormat_normalCase() =
-        assertTextResponse(TestUtils.realTextRecognitionData)
+    @Nested
+    @DisplayName("Testing onAnnotated")
+    inner class OnAnnotated {
+        @Test
+        fun onAnnotated_returnsExpectedFormat_normalCase() =
+            assertTextResponse(TestUtils.realTextRecognitionData)
 
-    @Test
-    fun onAnnotated_returnsExpectedFormat_emptyCase() = assertTextResponse("")
+        @Test
+        fun onAnnotated_returnsExpectedFormat_emptyCase() = assertTextResponse("")
 
-    @Test
-    fun onAnnotated_returnsExpectedFormat_nullCase() = assertTextResponse(null)
+        @Test
+        fun onAnnotated_returnsExpectedFormat_nullCase() = assertTextResponse(null)
 
-    private fun assertTextResponse(textResponseToTest: String?) {
-        val textAnnotationResponse = TestUtils.TextAnnotationResponseWrapper(textResponseToTest)
-        val actualTextReadyForDisplay =
-            textAnnotator.onAnnotated(textAnnotationResponse.rawTextAnnotatedResponse)
-        val expectedTextReadyForDisplay = textAnnotationResponse.expectedTextReadyForDisplay
-        assertEquals(expectedTextReadyForDisplay, actualTextReadyForDisplay)
+        private fun assertTextResponse(textResponseToTest: String?) {
+            val textAnnotationResponse = TestUtils.TextAnnotationResponseWrapper(textResponseToTest)
+            val actualTextReadyForDisplay =
+                textAnnotator.onAnnotated(textAnnotationResponse.rawTextAnnotatedResponse)
+            val expectedTextReadyForDisplay = textAnnotationResponse.expectedTextReadyForDisplay
+            assertEquals("Correct text was generated", expectedTextReadyForDisplay, actualTextReadyForDisplay)
+        }
     }
 
     @Test
+    @DisplayName("Testing annotate")
     // Caution: This test is not sensitive to changes in the toString64 extension of the Bitmap
     // class, whereas the real annotate method is sensitive to these changes
     fun annotate_passesCorrectJson() =
         assertAnnotatorPassesCorrectJson(textAnnotator, TestUtils.Endpoint.TEXT)
 
     @Test
+    @DisplayName("Testing annotate formatAnnotationResult")
     fun formatAnnotationResult_formatsCorrectly() {
         val actualFormattedResponse =
             FirebaseFunctionsService.formatAnnotationResult(TestUtils.Endpoint.TEXT.exampleJsonResponse)
@@ -51,32 +58,42 @@ class TextAnnotatorTestSuite {
     }
 }
 
-@DisplayName("Testing Object Annotator Endpoint...")
+@DisplayName("Object Annotator Endpoint")
 class ObjectAnnotatorTestSuite {
     private val objectAnnotator = FirebaseFunctionsService.Annotator.OBJECT
 
-    @Test
-    fun onAnnotated_returnsExpectedFormat_normalCase() = assertObjectResponseFormatsToString(
-        TestUtils.realObjectRecognitionData,
-        TestUtils.realObjectRecognitionData.joinToString{ it.description }
-    )
-
-    @Test
-    fun onAnnotated_returnsExpectedFormat_emptyCase() = assertObjectResponseFormatsToString(listOf(), null)
-
-    private fun assertObjectResponseFormatsToString(objectAnnotations: List<EntityAnnotation>, expectedString: String?) {
-        val actualLabelsReadyForDisplay = objectAnnotator.onAnnotated(
-            AnnotateImageResponse(null, objectAnnotations)
+    @Nested
+    @DisplayName("Testing onAnnotated")
+    inner class OnAnnotated {
+        @Test
+        fun onAnnotated_returnsExpectedFormat_normalCase() = assertObjectResponseFormatsToString(
+            TestUtils.realObjectRecognitionData,
+            TestUtils.realObjectRecognitionData.joinToString { it.description }
         )
-        assertEquals(expectedString, actualLabelsReadyForDisplay)
+
+        @Test
+        fun onAnnotated_returnsExpectedFormat_emptyCase() =
+            assertObjectResponseFormatsToString(listOf(), null)
+
+        private fun assertObjectResponseFormatsToString(
+            objectAnnotations: List<EntityAnnotation>,
+            expectedString: String?
+        ) {
+            val actualLabelsReadyForDisplay = objectAnnotator.onAnnotated(
+                AnnotateImageResponse(null, objectAnnotations)
+            )
+            assertEquals(expectedString, actualLabelsReadyForDisplay)
+        }
     }
 
     @Test
+    @DisplayName("Testing annotate")
     // Caution: This test is not sensitive to changes in the toString64 extension of the Bitmap
     // class, whereas the real annotate method is sensitive to these changes
     fun annotate_passesCorrectJson() = assertAnnotatorPassesCorrectJson(objectAnnotator, TestUtils.Endpoint.OBJECT)
 
     @Test
+    @DisplayName("Testing annotate formatAnnotationResult")
     fun formatAnnotationResult_formatsCorrectly() {
         val actualFormattedResponse = FirebaseFunctionsService.formatAnnotationResult(TestUtils.Endpoint.OBJECT.exampleJsonResponse)
         val expectedFormattedResponse = TestUtils.Endpoint.OBJECT.exampleImageAnnotation
@@ -139,9 +156,9 @@ fun assertAnnotatorPassesCorrectJson(annotator: Annotator, endpoint: TestUtils.E
 fun assertJSONFormatAndContents(json: JsonObject, expectedContent: String, endpoint: TestUtils.Endpoint) {
     val image:JsonObject = json.getAsJsonObject("image")
     val actualContent: String = image.getAsJsonPrimitive("content").asString
-    assertEquals(expectedContent, actualContent)
+    assertEquals("Image string is found and correct", expectedContent, actualContent)
     val featureArray = json.getAsJsonArray("features")
     val onlyFeature = featureArray.first().asJsonObject
     val actualEndpointDescriptor = onlyFeature.getAsJsonPrimitive("type").asString
-    assertEquals(endpoint.firebaseDescriptor, actualEndpointDescriptor)
+    assertEquals("Correct endpoint is being called", endpoint.firebaseDescriptor, actualEndpointDescriptor)
 }
