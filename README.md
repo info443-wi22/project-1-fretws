@@ -24,7 +24,7 @@ Using an img tag with a width of 1600px and a height of 1080px did not change th
 
 Run `./gradlew test` from the `rekognition` directory. The first time I ran it, this took quite some time to run and I had to run it again for any tests to actually execute.
 I also highly recommend using powershell to run this command, because if you use git bash like I usually would, there are odd control characters that make it almost unreadable.
-If this doesn't work or you already have Android Studio, then in Android Studio you can hit 'Ctrl+Shift+F10' or right click on the directory menu and run all tests from the context menu.
+If this doesn't work or you already have Android Studio, then in Android Studio you can hit 'Ctrl+Shift+F10' or right click on the top level directory and run all tests from the context menu.
 
 ### Code Coverage
 

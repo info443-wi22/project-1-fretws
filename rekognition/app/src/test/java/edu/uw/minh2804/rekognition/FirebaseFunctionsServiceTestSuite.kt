@@ -12,8 +12,9 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
 import org.junit.Assert.*
+import org.junit.jupiter.api.DisplayName
 
-
+@DisplayName("Testing Text Annotator Endpoint...")
 class TextAnnotatorTestSuite {
     private val textAnnotator = FirebaseFunctionsService.Annotator.TEXT
 
@@ -50,6 +51,7 @@ class TextAnnotatorTestSuite {
     }
 }
 
+@DisplayName("Testing Object Annotator Endpoint...")
 class ObjectAnnotatorTestSuite {
     private val objectAnnotator = FirebaseFunctionsService.Annotator.OBJECT
 
