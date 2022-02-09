@@ -18,7 +18,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.tabs.TabLayout
 import edu.uw.minh2804.rekognition.R
-import edu.uw.minh2804.rekognition.services.*
+import edu.uw.minh2804.rekognition.services.FirebaseFunctionsService.Annotator
 import edu.uw.minh2804.rekognition.stores.*
 import edu.uw.minh2804.rekognition.viewmodels.AccessibilityViewModel
 import java.io.File
@@ -39,26 +39,28 @@ class AccessibilityFragment : Fragment(R.layout.fragment_accessibility) {
         photoStore = PhotoStore(requireActivity())
 
         val captureButton = view.findViewById<ImageButton>(R.id.button_camera_capture)
-        val optionsTab = view.findViewById<TabLayout>(R.id.tab_layout_annotation_options)
+        val tabLayout = view.findViewById<TabLayout>(R.id.tab_layout_annotation_options)
 
-        // Direct captured photos to the endpoint corresponding to the selected tab 'Text' or
-        // 'Object'
+        // Direct captured photos to the endpoint corresponding to the selected tab
         captureButton.setOnClickListener {
-            when (optionsTab.selectedTabPosition) {
-                0 -> takePhoto(FirebaseFunctionsService.Annotator.TEXT) // REFACTOR was supposed to use tab string resource to maintain the fact that there is only one way to reference which tab is active/which endpoint should be called
-                1 -> takePhoto(FirebaseFunctionsService.Annotator.OBJECT)
-                else -> Log.e(TAG, "Selected tab not found")
+            val selectedTab = tabLayout.getTabAt(tabLayout.selectedTabPosition)
+            // The annotator endpoints are matched to their corresponding tab by the text the tab contains.
+            // This way, the position of each tab in inconsequential
+            when (selectedTab?.text) {
+                Annotator.TEXT.getTabText(requireContext()) -> takePhoto(Annotator.TEXT)
+                Annotator.OBJECT.getTabText(requireContext()) -> takePhoto(Annotator.OBJECT)
+                else -> Log.e(TAG, "Selected tab ${selectedTab?.text} not matched to a computer vision endpoint")
             }
         }
 
         // Keep track of selected tab in ViewModel for landscape consistency
-        optionsTab.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+        tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) { model.onTabPositionChanged(tab!!.position) }
             override fun onTabUnselected(tab: TabLayout.Tab?) {}
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
 
-        model.tabPosition.observe(this) { optionsTab.selectTab(optionsTab.getTabAt(it)) }
+        model.tabPosition.observe(this) { tabLayout.selectTab(tabLayout.getTabAt(it)) }
     }
 
     // Take a photo and generate its metadata and local file. Then, pass the CameraOutput to ViewModel

@@ -70,7 +70,7 @@ class AnnotationFragment : Fragment(R.layout.fragment_annotation) {
                     } else {
                         val errorToDisplay = getString(
                             R.string.camera_output_result_not_found,
-                            output.requestAnnotator.getType(requireContext())
+                            output.requestAnnotator.getTabText(requireContext())
                         )
                         model.onImageAnnotated(errorToDisplay)
                     }

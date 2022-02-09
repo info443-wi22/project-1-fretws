@@ -22,7 +22,7 @@ import kotlinx.parcelize.Parcelize
 // This interface is used to map callbacks with a user's selected option in the tab bar.
 interface Annotator {
     // Gets a unique identifier of the type of annotation this Annotator provides
-    fun getType(context: Context): String
+    fun getTabText(context: Context): String
     // Formats the annotation response into a string, if the response is valid
     fun onAnnotated(result: AnnotateImageResponse): String? // REFACTOR if storing formatted results, then don't need to have separate annotate and onAnnotated methods
     // Annotates an image with a description, formatted in an AnnotateImageResponse
@@ -31,7 +31,7 @@ interface Annotator {
 
 // This service is responsible for invoking web requests to Firebase.
 object FirebaseFunctionsService {
-    // Coding in a getter instead of a initial value makes this object mockable by mockk
+    // Coding in a getter instead of an initial value makes this object mockable by mockk
     private val functions
         get() = Firebase.functions
 
@@ -41,7 +41,7 @@ object FirebaseFunctionsService {
         TEXT {
             // The string resource labelling each tab in the camera activity is a unique identifier
             // of the endpoint, and is widely accessible across the code base.
-            override fun getType(context: Context): String {
+            override fun getTabText(context: Context): String {
                 // REFACTOR: use the tab position in the accessibility fragment as the single point of change?
                 return context.getString(R.string.tab_item_text_annotation)
             }
@@ -57,7 +57,7 @@ object FirebaseFunctionsService {
             }
         },
         OBJECT {
-            override fun getType(context: Context): String {
+            override fun getTabText(context: Context): String {
                 return context.getString(R.string.tab_item_object_annotation)
             }
 
