@@ -52,7 +52,7 @@ class TextAnnotatorTestSuite {
     @DisplayName("Testing annotate formatAnnotationResult")
     fun formatAnnotationResult_formatsCorrectly() {
         val actualFormattedResponse =
-            FirebaseFunctionsService.formatAnnotationResult(TestUtils.Endpoint.TEXT.exampleJsonResponse)
+            RecognitionJsonResponse.toKotlin(TestUtils.Endpoint.TEXT.exampleJsonResponse)
         val expectedFormattedResponse = TestUtils.Endpoint.TEXT.exampleImageAnnotation
         assertEquals(expectedFormattedResponse, actualFormattedResponse)
     }
@@ -95,7 +95,7 @@ class ObjectAnnotatorTestSuite {
     @Test
     @DisplayName("Testing annotate formatAnnotationResult")
     fun formatAnnotationResult_formatsCorrectly() {
-        val actualFormattedResponse = FirebaseFunctionsService.formatAnnotationResult(TestUtils.Endpoint.OBJECT.exampleJsonResponse)
+        val actualFormattedResponse = RecognitionJsonResponse.toKotlin(TestUtils.Endpoint.OBJECT.exampleJsonResponse)
         val expectedFormattedResponse = TestUtils.Endpoint.OBJECT.exampleImageAnnotation
         assertEquals(expectedFormattedResponse, actualFormattedResponse)
     }
