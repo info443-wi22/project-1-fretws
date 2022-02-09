@@ -18,6 +18,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.tabs.TabLayout
 import edu.uw.minh2804.rekognition.R
+import edu.uw.minh2804.rekognition.services.FirebaseFunctionsService
 import edu.uw.minh2804.rekognition.services.FirebaseFunctionsService.Annotator
 import edu.uw.minh2804.rekognition.stores.*
 import edu.uw.minh2804.rekognition.viewmodels.AccessibilityViewModel
@@ -45,11 +46,11 @@ class AccessibilityFragment : Fragment(R.layout.fragment_accessibility) {
         captureButton.setOnClickListener {
             val selectedTab = tabLayout.getTabAt(tabLayout.selectedTabPosition)
             // The annotator endpoints are matched to their corresponding tab by the text the tab contains.
-            // This way, the position of each tab in inconsequential
-            when (selectedTab?.text) {
-                Annotator.TEXT.getTabText(requireContext()) -> takePhoto(Annotator.TEXT)
-                Annotator.OBJECT.getTabText(requireContext()) -> takePhoto(Annotator.OBJECT)
-                else -> Log.e(TAG, "Selected tab ${selectedTab?.text} not matched to a computer vision endpoint")
+            val currentAnnotator = FirebaseFunctionsService.getAnnotatorByIdentifierText(requireContext(), selectedTab?.text)
+            if (currentAnnotator != null) {
+                takePhoto(currentAnnotator)
+            } else {
+                Log.e(TAG, "Selected tab ${selectedTab?.text} not matched to a computer vision endpoint")
             }
         }
 

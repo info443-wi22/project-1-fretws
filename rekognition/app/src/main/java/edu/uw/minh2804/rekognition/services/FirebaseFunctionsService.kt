@@ -5,7 +5,7 @@ package edu.uw.minh2804.rekognition.services
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.Parcelable
-import android.util.Log
+import com.google.android.material.tabs.TabLayout
 import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
@@ -22,7 +22,7 @@ import kotlinx.parcelize.Parcelize
 // This interface is used to map callbacks with a user's selected option in the tab bar.
 interface Annotator {
     // Gets a unique identifier of the type of annotation this Annotator provides
-    fun getTabText(context: Context): String
+    fun getIdentifierText(context: Context): String
     // Formats the annotation response into a string, if the response is valid
     fun onAnnotated(result: AnnotateImageResponse): String? // REFACTOR if storing formatted results, then don't need to have separate annotate and onAnnotated methods
     // Annotates an image with a description, formatted in an AnnotateImageResponse
@@ -35,13 +35,23 @@ object FirebaseFunctionsService {
     private val functions
         get() = Firebase.functions
 
+    fun getAnnotatorByIdentifierText(context: Context, tabText: CharSequence?): Annotator? {
+        // This way, the position of each tab in inconsequential
+        for (annotator in Annotator.values()) {
+            if (tabText == annotator.getIdentifierText(context)) {
+                return annotator
+            }
+        }
+        return null
+    }
+
     // This enum class encapsulates the differences between the text and object recognition
     // endpoints, allowing for code referencing these endpoints to be agnostic of these differences
     enum class Annotator : edu.uw.minh2804.rekognition.services.Annotator {
         TEXT {
             // The string resource labelling each tab in the camera activity is a unique identifier
             // of the endpoint, and is widely accessible across the code base.
-            override fun getTabText(context: Context): String {
+            override fun getIdentifierText(context: Context): String {
                 // REFACTOR: use the tab position in the accessibility fragment as the single point of change?
                 return context.getString(R.string.tab_item_text_annotation)
             }
@@ -57,7 +67,7 @@ object FirebaseFunctionsService {
             }
         },
         OBJECT {
-            override fun getTabText(context: Context): String {
+            override fun getIdentifierText(context: Context): String {
                 return context.getString(R.string.tab_item_object_annotation)
             }
 
