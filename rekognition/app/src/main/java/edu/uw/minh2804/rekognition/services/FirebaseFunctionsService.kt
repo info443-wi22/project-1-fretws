@@ -35,14 +35,25 @@ object FirebaseFunctionsService {
     private val functions
         get() = Firebase.functions
 
+    // The annotator endpoints are matched to their corresponding tab by the text the tab contains.
+    // This way, the position of each tab is inconsequential
+    fun getAnnotatorForSelectedTab(context: Context, tabLayout: TabLayout): Annotator? {
+        val selectedTab = tabLayout.getTabAt(tabLayout.selectedTabPosition)
+        for (annotator in Annotator.values()) {
+            if (selectedTab?.text == annotator.getIdentifierText(context)) {
+                return annotator
+            }
+        }
+        return null
+    }
+
     // This enum class encapsulates the differences between the text and object recognition
     // endpoints, allowing for code referencing these endpoints to be agnostic of these differences
     enum class Annotator : edu.uw.minh2804.rekognition.services.Annotator {
         TEXT {
-            // The string resource labelling each tab in the camera activity is a unique identifier
+            // The string resource labeling each tab in the camera activity is a unique identifier
             // of the endpoint, and is widely accessible across the code base.
             override fun getIdentifierText(context: Context): String {
-                // REFACTOR: use the tab position in the accessibility fragment as the single point of change?
                 return context.getString(R.string.tab_item_text_annotation)
             }
 

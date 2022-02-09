@@ -46,14 +46,9 @@ class AccessibilityFragment : Fragment(R.layout.fragment_accessibility) {
         // Direct captured photos to the endpoint corresponding to the selected tab
         captureButton.setOnClickListener {
             val selectedTab = tabLayout.getTabAt(tabLayout.selectedTabPosition)
-            // The annotator endpoints are matched to their corresponding tab by the text the tab contains.
-            // This way, the position of each tab is inconsequential
-            val currentAnnotator = getAnnotatorByIdentifierText(requireContext(), selectedTab?.text)
-            if (currentAnnotator != null) {
-                takePhoto(currentAnnotator)
-            } else {
-                Log.e(TAG, "Selected tab ${selectedTab?.text} not matched to a computer vision endpoint")
-            }
+            val currentAnnotator = FirebaseFunctionsService.getAnnotatorForSelectedTab(requireContext(), tabLayout)
+            if (currentAnnotator != null) takePhoto(currentAnnotator)
+            else Log.e(TAG, "Selected tab ${selectedTab?.text} not matched to a computer vision endpoint")
         }
 
         // Keep track of selected tab in ViewModel for landscape consistency
@@ -89,14 +84,5 @@ class AccessibilityFragment : Fragment(R.layout.fragment_accessibility) {
 
     companion object {
         private val TAG = AccessibilityFragment::class.simpleName
-
-        private fun getAnnotatorByIdentifierText(context: Context, tabText: CharSequence?): Annotator? {
-            for (annotator in Annotator.values()) {
-                if (tabText == annotator.getIdentifierText(context)) {
-                    return annotator
-                }
-            }
-            return null
-        }
     }
 }
