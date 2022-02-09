@@ -35,16 +35,6 @@ object FirebaseFunctionsService {
     private val functions
         get() = Firebase.functions
 
-    fun getAnnotatorByIdentifierText(context: Context, tabText: CharSequence?): Annotator? {
-        // This way, the position of each tab in inconsequential
-        for (annotator in Annotator.values()) {
-            if (tabText == annotator.getIdentifierText(context)) {
-                return annotator
-            }
-        }
-        return null
-    }
-
     // This enum class encapsulates the differences between the text and object recognition
     // endpoints, allowing for code referencing these endpoints to be agnostic of these differences
     enum class Annotator : edu.uw.minh2804.rekognition.services.Annotator {
