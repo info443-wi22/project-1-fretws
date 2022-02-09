@@ -78,7 +78,7 @@ object FirebaseFunctionsService {
         if (!FirebaseAuthService.isAuthenticated()) {
             FirebaseAuthService.signIn()
         }
-        val result = suspendCoroutine<JsonElement> { continuation ->
+        val resultsArray = suspendCoroutine<JsonElement> { continuation ->
             functions
                 .getHttpsCallable("annotateImage")
                 .call(requestBody.toString())
@@ -91,14 +91,14 @@ object FirebaseFunctionsService {
                     continuation.resumeWithException(exception)
                 }
         }
-        return formatAnnotationResult(result)
+        return formatAnnotationResult(resultsArray)
     }
 
     // REFACTOR: This was added for testing purposes
-    internal fun formatAnnotationResult(result: JsonElement): AnnotateImageResponse {
-        // REFACTOR: use variable that describes what the first entry is -> the entry for the first and only image
-        // REFACTOR: null safety was added here
-        val nullableDataResponse = Gson().fromJson(result.asJsonArray.first(), AnnotateImageResponse::class.java)
+    internal fun formatAnnotationResult(resultsArray: JsonElement): AnnotateImageResponse {
+        // We only call for one image at a time, so there will only ever be one result in the array
+        val soleAnnotation = resultsArray.asJsonArray.first()
+        val nullableDataResponse = Gson().fromJson(soleAnnotation, AnnotateImageResponse::class.java)
         // Gson is able to break the null safety of the AnnotateImageResponse labelAnnotations parameter,
         // so we should repair that null safety immediately
         val nonNullable = AnnotateImageResponse(

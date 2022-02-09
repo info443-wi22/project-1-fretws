@@ -19,16 +19,6 @@ class TestUtils {
             EntityAnnotation("Snapshot", 0.8523099),
             EntityAnnotation("Town", 0.8481104)
         )
-
-        fun assertJSONFormatAndContents(json: JsonObject, expectedContent: String, endpoint: Endpoint) {
-            val image:JsonObject = json.getAsJsonObject("image")
-            val actualContent: String = image.getAsJsonPrimitive("content").asString
-            assertEquals(expectedContent, actualContent)
-            val featureArray = json.getAsJsonArray("features")
-            val onlyFeature = featureArray.first().asJsonObject
-            val actualEndpointDescriptor = onlyFeature.getAsJsonPrimitive("type").asString
-            assertEquals(endpoint.firebaseDescriptor, actualEndpointDescriptor)
-        }
     }
 
     enum class Endpoint {
