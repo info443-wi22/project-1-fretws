@@ -4,20 +4,15 @@ package edu.uw.minh2804.rekognition.services
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.os.Parcelable
 import com.google.android.material.tabs.TabLayout
 import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
-import com.google.gson.Gson
-import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import edu.uw.minh2804.rekognition.R
 import edu.uw.minh2804.rekognition.extensions.toString64
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
-import kotlinx.parcelize.Parcelize
 
 // This interface is used to map callbacks with a user's selected option in the tab bar.
 interface Annotator {
@@ -78,9 +73,11 @@ object FirebaseFunctionsService {
                 } else null
             }
 
-            override suspend fun annotate(image: Bitmap) = requestAnnotation(
-                ObjectRecognitionRequest.createRequest(image.toString64())
-            )
+            override suspend fun annotate(image: Bitmap): AnnotateImageResponse {
+                val base64StringifiedImage = image.toString64()
+                val request = ObjectRecognitionRequest.createRequest(base64StringifiedImage)
+                return requestAnnotation(request)
+            }
         }
     }
 
@@ -89,54 +86,19 @@ object FirebaseFunctionsService {
         if (!FirebaseAuthService.isAuthenticated()) {
             FirebaseAuthService.signIn()
         }
-        val resultsArray = suspendCoroutine<JsonElement> { continuation ->
+        val annotateImageResponse = suspendCoroutine<AnnotateImageResponse> { continuation ->
             functions
                 .getHttpsCallable("annotateImage")
                 .call(requestBody.toString())
                 .addOnSuccessListener { successfulResponse ->
                     continuation.resume(
-                        JsonParser.parseString(Gson().toJson(successfulResponse.data))
+                        RecognitionJsonResponse.parseString(successfulResponse)
                     )
                 }
                 .addOnFailureListener { exception ->
                     continuation.resumeWithException(exception)
                 }
         }
-        return formatAnnotationResult(resultsArray)
-    }
-
-    // REFACTOR: This was added for testing purposes
-    internal fun formatAnnotationResult(resultsArray: JsonElement): AnnotateImageResponse {
-        // We only call for one image at a time, so there will only ever be one result in the array
-        val soleAnnotation = resultsArray.asJsonArray.first()
-        val nullableDataResponse = Gson().fromJson(soleAnnotation, AnnotateImageResponse::class.java)
-        // Gson is able to break the null safety of the AnnotateImageResponse labelAnnotations parameter,
-        // so we should repair that null safety immediately
-        val nonNullable = AnnotateImageResponse(
-            fullTextAnnotation = nullableDataResponse.fullTextAnnotation,
-            labelAnnotations = nullableDataResponse.labelAnnotations
-                ?: List<EntityAnnotation>(size = 0, init = {EntityAnnotation("", 0.0)})
-        )
-        return nonNullable
+        return annotateImageResponse
     }
 }
-
-// These data classes are used to serialize the Json response from Firebase functions.
-// See more: https://cloud.google.com/vision/docs/reference/rest/v1/AnnotateImageResponse#textannotation
-
-@Parcelize
-data class EntityAnnotation(
-    val description: String,
-    val score: Double
-) : Parcelable
-
-@Parcelize
-data class TextAnnotation(
-    val text: String
-) : Parcelable
-
-@Parcelize
-data class AnnotateImageResponse(
-    val fullTextAnnotation: TextAnnotation?,
-    val labelAnnotations: List<EntityAnnotation>
-) : Parcelable
