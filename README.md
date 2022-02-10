@@ -4,20 +4,27 @@ This code base is for an Android Application called 'Rekognition.' Developed by 
 
 ## Structure Overview
 
+The part of the architecture that we will focus on most with testing and refactoring is the Services package. Specifically, FirebaseFunctionsService -- the service that handles the complexity of calling the right endpoint of the Firebase API for each image and processing Json responses from the API into a more usable form.
+This section nonetheless focuses on the context around the app as a whole, so we can see where the Services fit in.
+
 ### Top level architecture of the application
 
 Stores are the logic layer that bridges between the UI and the Device Storage, and Services are the logic layer that bridges to the Firebase backend.
+We store images in device storage so that they can be viewed by the user later, in a history view.
 Stores encapsulate choices about what information to store about the images and how to store it.
 
-Services encapsulate choices about what Firebase endpoint to use and when. Requests to Firebase are made directly by the Services, and therefore the Services package must also encapsulate information about the structure of queries and responses made to and from Firebase.
+Services encapsulate choices about what Firebase endpoint (Text or Object detection) to use and when. Requests to Firebase are made directly by the Services, and therefore the Services package must also encapsulate information about the structure of queries and responses made to and from Firebase.
 
 Activities are composed of Fragments, and Adapters are used by certain fragments to populate UI list items with data.
+Although it is not common in simple apps, fragments can also contain other fragments. A useful analogy is that a fragment in Android is like a large React component.
+Fragments that are inside of other fragments will be called subfragments.
 
 ![architecture diagram](/imgs/Top_Level_Architecture.png)
 
 ### More Detailed architecture of the application
 
-ViewModels act as the subject in a subject-observer pattern. The Fragments and Stores observe and initiate changes in the Viewmodels.
+ViewModels act as the subject in a subject-observer pattern. The Fragments and Stores observe the Viewmodel data and also initiate changes in it.
+RequestClasses encapsulate the logic required to generate a Json request intended for one of the Firebase endpoints.
 
 ![architecture diagram](/imgs/Detailed_Architecture.png)
 
@@ -25,10 +32,22 @@ ViewModels act as the subject in a subject-observer pattern. The Fragments and S
 
 Each step in the sequence is labelled with its number in the sequence.
 Self-connections such as 3, 4, and 14 are all internal processing done by their corresonding component. While these are not the only internal steps that occur in this sequence, these are the internal steps that are necessary for understanding the sequence as a whole.
+
+This sequence begins with the user pressing the button to take a picture.
+The accessibility fragment (which contains the capture button) requests that its sub-fragment, the camera fragment, take a photo.
+The camera fragment does so, and creates a photo file to be shared across the architecture.
+This reference is passed back to the accessibility fragment and then the accessibility viewmodel is alerted of a new photo file.
+
+The annotation fragment, which is observing for changes to the accessibility viewmodel, takes that photo and sends it to the FirebaseFunctionsService.
+This service requests over https that the image is annotated by the Firebase backend (Google Vision API).
+The api processes the photo, annotating it either for text or for objects detected, depending on the mode that the app was in when the user took the picture.
+
+The annotations are then sent back to the annotation fragment, which alerts the accessibility viewmodel of a new image annotation.
+The final fragment in this process flow, the response fragment, is observing the accessibility viewmodel, and receives the new annotation.
+The response fragment is then rendered on the screen containing the annotation text and plays back the annotations via device audio.
+
 <!-- <img src="https://user-images.githubusercontent.com/62970170/150383233-6d5f1bfc-9510-489e-bfdf-7942a73f9eaf.png" width="1600" height="1080"> -->
 ![architecture diagram](/imgs/Image_Capture_Sequence.png)
-
-The part of the architecture that we will focus on most is the Services package. Specifically, FirebaseFunctionsService -- the service that handles the complexity of calling the right endpoint of the Firebase API for each image and processing Json responses from the API into a more usable form.
 
 ## Testing
 
@@ -36,9 +55,12 @@ The part of the architecture that we will focus on most is the Services package.
 
 Run `./gradlew test` from the `rekognition` directory. The first time I ran it, this took quite some time to run and I had to run it again for any tests to actually execute.
 I also highly recommend using powershell to run this command, because if you use git bash like I usually would, there are odd control characters that make it almost unreadable.
-If this doesn't work or you already have Android Studio, then in Android Studio you can hit 'Ctrl+Shift+F10' or right click on the recognition directory and run all tests from the context menu.
+If this doesn't work or you already have Android Studio, then in Android Studio you can hit 'Ctrl+Shift+F10' or right click on the rekognition directory and run all tests from the right-click context menu.
 
 ### Code Coverage
+
+The following is a code coverage report for the tests in the FirebaseFunctionsService test suite. Almost all parts of the services package are covered, with the exceptions being getter functions, FirebaseAuthService, and any code that is communicating directly with the firebase backend.
+I had no plans to change the FirebaseAuthService
 
 ![Code Coverage Report](/imgs/Testing_Coverage.png)
 
