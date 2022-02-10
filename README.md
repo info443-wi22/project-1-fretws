@@ -1,22 +1,34 @@
 # Architecture of a Seeing-eye Application
 
-This code base is for an Android Application called 'Rekognition.' Developed by Will Song, Tom Nguyen, and myself, this application allows users to take pictures and have any text or objects detected in the image read aloud to them. This is intended to be used by those with vision impairments.
+This code base is for an Android Application called 'Rekognition.' Developed by Will Song, Tom Nguyen, and myself, this application allows users to take pictures and have any text or objects detected in the image read aloud to them. This is intended to be used by those with vision impairments, and facilitates this by reading detected text and object labels aloud to the user.
 
-## Structure Diagrams
+## Structure Overview
 
 ### Top level architecture of the application
+
+Stores are the logic layer that bridges between the UI and the Device Storage, and Services are the logic layer that bridges to the Firebase backend.
+Stores encapsulate choices about what information to store about the images and how to store it.
+
+Services encapsulate choices about what Firebase endpoint to use and when. Requests to Firebase are made directly by the Services, and therefore the Services package must also encapsulate information about the structure of queries and responses made to and from Firebase.
+
+Activities are composed of Fragments, and Adapters are used by certain fragments to populate UI list items with data.
 
 ![architecture diagram](/imgs/Top_Level_Architecture.png)
 
 ### More Detailed architecture of the application
 
+ViewModels act as the subject in a subject-observer pattern. The Fragments and Stores observe and initiate changes in the Viewmodels.
+
 ![architecture diagram](/imgs/Detailed_Architecture.png)
 
 ### Sequence diagram showing how an image of text goes from being captured by the user to being read aloud
 
-Using an img tag with a width of 1600px and a height of 1080px did not change the readability of the diagram. Instead, click on the image to get a better viewing experience.
+Each step in the sequence is labelled with its number in the sequence.
+Self-connections such as 3, 4, and 14 are all internal processing done by their corresonding component. While these are not the only internal steps that occur in this sequence, these are the internal steps that are necessary for understanding the sequence as a whole.
 <!-- <img src="https://user-images.githubusercontent.com/62970170/150383233-6d5f1bfc-9510-489e-bfdf-7942a73f9eaf.png" width="1600" height="1080"> -->
 ![architecture diagram](/imgs/Image_Capture_Sequence.png)
+
+The part of the architecture that we will focus on most is the Services package. Specifically, FirebaseFunctionsService -- the service that handles the complexity of calling the right endpoint of the Firebase API for each image and processing Json responses from the API into a more usable form.
 
 ## Testing
 
@@ -36,10 +48,14 @@ Including these lines of code in automated testing would be possible if the fire
 ## Refactoring
 
 ### Testability
+Many parts of the services package and its immediate clients used chains of getters instead of temporary variables, which leads to fewer lines of code, a cleaner look, and in the end, poor debuggability.
+These were my first targets for refactoring, largely because it was necessary to make these refactorings in order to develop a test suite.
 
-### Private vs Internal
+Also for the purpose of testability, I was forced to change visibility of certain functions from `private` to `internal`.
 
 ### `requestAnnotation()` and `formatAnnotationResult()`
+
+The rest of the Refactoring section is devoted to specific cases of refactoring that had meaningful impact on package architecture.
 
 ``` Kotlin
 fun requestAnnotation(image: Bitmap): AnnotateImageResponse {
@@ -81,7 +97,7 @@ fun formatAnnotationResult(result: JsonElement): AnnotateImageResponse {
 }
 ```
 
-And finally, there is that chain of getters used to get the data we need from the raw Json returned by Firebase. This should be extracted into a well-named intermediate variable in order to better explain what that chain is doing and also make it more debuggable; it is difficult to access the value of the chain when it is immediately passed to `Gson().fromJson(...)`.
+There is also that chain of getters used to get the data we need out of the raw Json returned by Firebase. This should be extracted into a well-named intermediate variable in order to better explain what that chain is doing and also make it more debuggable; it is difficult to access the value of the chain when it is immediately passed to `Gson().fromJson(...)`.
 
 ``` Kotlin
 internal fun formatAnnotationResult(resultsArray: JsonElement): AnnotateImageResponse {
@@ -95,6 +111,61 @@ internal fun formatAnnotationResult(resultsArray: JsonElement): AnnotateImageRes
     )
     return nonNullable
 }
+```
+
+The final refactoring of this portion of code took me a little while to notice. In fact, only when I started to describe the FirebaseFunctionsService did I realize it had two distinct parts of its behavior that can be separated into two different classes.
+The first part of its behavior, which will remain as part of FirebaseFunctionsService is to handle the complexity of calling the right endpoint of the Firebase API for each image.
+The second part, which we will extract into a separate class, is processing Json responses from the API into a more usable form.
+There are some data classes used in parsing responses that move to the newly created module `RecognitionJsonResponse`, but the more important parts of this refactoring are a new function and a change in `requestAnnotation`.
+This is what `requestAnnotation` looked like before this final refactoring:
+
+``` Kotlin
+internal suspend fun requestAnnotation(requestBody: JsonObject): AnnotateImageResponse {
+    ...
+    val resultsArray = suspendCoroutine<JsonElement> { continuation ->
+        functions
+            .getHttpsCallable("annotateImage")
+            .call(requestBody.toString())
+            .addOnSuccessListener { successfulResponse ->
+                continuation.resume(
+                    JsonParser.parseString(Gson().toJson(successfulResponse.data))
+                )
+            }
+            .addOnFailureListener { exception ->
+                continuation.resumeWithException(exception)
+            }
+    }
+    return formatAnnotationResult(resultsArray)
+}
+```
+
+The specifics aren't necessary to understand other than the fact that whatever is passed to `continuation.resume()` is value assigned to `resultsArray`. This is changed to the following:
+
+``` Kotlin
+internal suspend fun requestAnnotation(requestBody: JsonObject): AnnotateImageResponse {
+    ...
+    val annotateImageResponse = suspendCoroutine<AnnotateImageResponse> { continuation ->
+        functions
+            .getHttpsCallable("annotateImage")
+            .call(requestBody.toString())
+            .addOnSuccessListener { successfulResponse ->
+                continuation.resume(
+                    RecognitionJsonResponse.parseString(successfulResponse)
+                )
+            }
+            .addOnFailureListener { exception ->
+                continuation.resumeWithException(exception)
+            }
+    }
+    return annotateImageResponse
+}
+```
+
+Now, FirebaseFunctionsService is agnostic of the details of parsing the https response, and the RecognitionJsonResponse module can be easily swapped out for a different implementation.
+The new class looks like this:
+
+``` Kotlin
+    
 ```
 
 ### `getAnnotatorByIdentifierText()` and `getIdentifierText()`
