@@ -77,7 +77,7 @@ Also for the purpose of testability, I was forced to change visibility of certai
 
 ### `requestAnnotation()` and `formatAnnotationResult()`
 
-The rest of the Refactoring section is devoted to specific cases of refactoring that had meaningful impact on package architecture.
+The rest of the Refactoring section is devoted to specific cases of refactoring that had meaningful impact on package architecture, including readability, flexibility, and maintainability.
 
 ``` Kotlin
 fun requestAnnotation(image: Bitmap): AnnotateImageResponse {
@@ -161,33 +161,30 @@ internal suspend fun requestAnnotation(requestBody: JsonObject): AnnotateImageRe
 }
 ```
 
-The specifics aren't necessary to understand other than the fact that whatever is passed to `continuation.resume()` is value assigned to `resultsArray`. This is changed to the following:
+The specifics aren't necessary to understand other than the fact that whatever is passed to `continuation.resume()` is the value assigned to `resultsArray`. This is changed to the following:
 
 ``` Kotlin
-internal suspend fun requestAnnotation(requestBody: JsonObject): AnnotateImageResponse {
-    ...
-    val annotateImageResponse = suspendCoroutine<AnnotateImageResponse> { continuation ->
-        functions
-            .getHttpsCallable("annotateImage")
-            .call(requestBody.toString())
-            .addOnSuccessListener { successfulResponse ->
-                continuation.resume(
-                    RecognitionJsonResponse.parseString(successfulResponse)
-                )
-            }
-            .addOnFailureListener { exception ->
-                continuation.resumeWithException(exception)
-            }
-    }
-    return annotateImageResponse
-}
+  .addOnSuccessListener { successfulResponse ->
+      continuation.resume(
+          RecognitionJsonResponse.parseString(successfulResponse)
+      )
+  }
 ```
 
 Now, FirebaseFunctionsService is agnostic of the details of parsing the https response, and the RecognitionJsonResponse module can be easily swapped out for a different implementation.
 The new class looks like this:
 
 ``` Kotlin
-    
+object RecognitionJsonResponse {
+  // This function is not very easy to test, so we do not combine it with `toKotlin`
+    fun parseString(successfulResponse: HttpsCallableResult): AnnotateImageResponse {
+        val parsedJsonElement = JsonParser.parseString(Gson().toJson(successfulResponse.data))
+        return toKotlin(parsedJsonElement)
+    }
+
+    // This function is the same as before, it was just renamed from `formatAnnotationResult` to `toKotlin`. So, the test we have for it is almost unchanged
+    internal fun toKotlin(resultsData: JsonElement) : AnnotateImageResponse { ... }
+}
 ```
 
 ### `getAnnotatorByIdentifierText()` and `getIdentifierText()`
