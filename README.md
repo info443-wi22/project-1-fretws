@@ -9,28 +9,33 @@ This section nonetheless focuses on the context around the app as a whole, so we
 
 ### Top level architecture of the application
 
-Stores are the logic layer that bridges between the UI and the Device Storage, and Services are the logic layer that bridges to the Firebase backend.
+In Figure 1, Stores are the logic layer that bridges between the UI and the Device Storage, and Services are the logic layer that bridges to the Firebase backend.
 We store images in device storage so that they can be viewed by the user later, in a history view.
 Stores encapsulate choices about what information to store about the images and how to store it.
 
 Services encapsulate choices about what Firebase endpoint (Text or Object detection) to use and when. Requests to Firebase are made directly by the Services, and therefore the Services package must also encapsulate information about the structure of queries and responses made to and from Firebase.
 
-Activities are composed of Fragments, and Adapters are used by certain fragments to populate UI list items with data.
 Although it is not common in simple apps, fragments can also contain other fragments. A useful analogy is that a fragment in Android is like a large React component.
 Fragments that are inside of other fragments will be called subfragments.
 
-![architecture diagram](/imgs/Top_Level_Architecture.png)
+| ![top level architecture diagram](/imgs/Top_Level_Architecture.png) |
+|:-:|
+| Figure 1: Top level architecture diagram |
 
 ### More Detailed architecture of the application
 
-ViewModels act as the subject in a subject-observer pattern. The Fragments and Stores observe the Viewmodel data and also initiate changes in it.
+As shown in Figure 2, ViewModels act as the subject in a subject-observer pattern. The Fragments and Stores observe the Viewmodel data and also initiate changes in it.
 RequestClasses encapsulate the logic required to generate a Json request intended for one of the Firebase endpoints.
 
-![architecture diagram](/imgs/Detailed_Architecture.png)
+| ![architecture diagram](/imgs/Detailed_Architecture.png) |
+|:-:|
+| Figure 2: More detailed architecture diagram showing types of relationship and every major component type |
 
-### Sequence diagram showing how an image of text goes from being captured by the user to being read aloud
+There is one RequestClass for each endpoint: ObjectRecognitionRequest and TextRecognitionRequest. Functions in these singletons are called by FirebaseFunctionsService (another singleton) to generate the the Json that the Firebase backend recieves.
 
-Each step in the sequence is labelled with its number in the sequence.
+### Sequence diagram
+
+Each step in the sequence described in Figure 3 is labelled with its number in the sequence.
 Self-connections such as 3, 4, and 14 are all internal processing done by their corresonding component. While these are not the only internal steps that occur in this sequence, these are the internal steps that are necessary for understanding the sequence as a whole.
 
 This sequence begins with the user pressing the button to take a picture.
@@ -46,8 +51,9 @@ The annotations are then sent back to the annotation fragment, which alerts the 
 The final fragment in this process flow, the response fragment, is observing the accessibility viewmodel, and receives the new annotation.
 The response fragment is then rendered on the screen containing the annotation text and plays back the annotations via device audio.
 
-<!-- <img src="https://user-images.githubusercontent.com/62970170/150383233-6d5f1bfc-9510-489e-bfdf-7942a73f9eaf.png" width="1600" height="1080"> -->
-![architecture diagram](/imgs/Image_Capture_Sequence.png)
+| ![Sequence diagram](/imgs/Image_Capture_Sequence.png) |
+|:-:|
+| Figure 3: Sequence diagram showing how an image of text goes from being captured by the user to being read aloud |
 
 ## Testing
 
@@ -59,10 +65,12 @@ If this doesn't work or you already have Android Studio, then in Android Studio 
 
 ### Code Coverage
 
-The following is a code coverage report for the tests in the FirebaseFunctionsService test suite. Almost all parts of the services package are covered, with the exceptions being getter functions, FirebaseAuthService, and any code that is communicating directly with the firebase backend.
+Figure 4 is a code coverage report for the tests in the FirebaseFunctionsService test suite. Almost all parts of the services package are covered, with the exceptions being getter functions, FirebaseAuthService, and any code that is communicating directly with the firebase backend.
 I had no plans to change the FirebaseAuthService
 
-![Code Coverage Report](/imgs/Testing_Coverage.png)
+| ![Code Coverage Report](/imgs/Testing_Coverage.png) |
+|:-:|
+| Figure 4: Code coverage report from Android Studio that shows the amount of code from the services package being reached by the testing suite |
 
 The missing code that is being reported as uncovered is all responsible for communication with the firebase backend, and therefore will not be included in automated testing.
 Including these lines of code in automated testing would be possible if the firebase backend were able to be emulated locally, but since this specific backend utilizes Cloud Vision AI, it cannot be emulated locally (at least not without drastic changes to the code base).
@@ -70,14 +78,24 @@ Including these lines of code in automated testing would be possible if the fire
 ## Refactoring
 
 ### Testability
+
 Many parts of the services package and its immediate clients used chains of getters instead of temporary variables, which leads to fewer lines of code, a cleaner look, and in the end, poor debuggability.
+
+The following is a list of the locations of these types of infractions, all having been corrected:
+
+- annotate() in FirebaseFunctionsService.Annotator.TEXT has a chain that should be broken up
+- annotate() in FirebaseFunctionsService.Annotator.OBJECT has a chain that should be broken up
+- The TextRecognitionRequest object should have a local constant instead of a magic string
+- The ObjectRecognitionRequest object should have a local constant instead of a magic string
+- The ObjectRecognitionRequest object should have a local constant instead of a magic number
+
 These were my first targets for refactoring, largely because it was necessary to make these refactorings in order to develop a test suite.
 
 Also for the purpose of testability, I was forced to change visibility of certain functions from `private` to `internal`.
 
 ### `requestAnnotation()` and `formatAnnotationResult()`
 
-The rest of the Refactoring section is devoted to specific cases of refactoring that had meaningful impact on package architecture, including readability, flexibility, and maintainability.
+The rest of the Refactoring section is devoted to specific cases of refactoring that had meaningful impact on package architecture, including readability, modifiability, and maintainability.
 
 ``` Kotlin
 fun requestAnnotation(image: Bitmap): AnnotateImageResponse {
@@ -275,3 +293,17 @@ class FirebaseFunctionsService {
 While one could pass in `selectedTab.text`, it is preferable to pass in the TabLayout itself because this further hides the inner workings of the Annotator enumeration.
 This way, the AccessibilityFragment does not know how the correct annotator is chosen, it just knows that the TabLayout and context are necessary.
 This should minimize refactoring in the event that a different implementation of getAnnotatorForSelectedTab is adopted in the future.
+
+## In Summary
+
+Many code smells and possible refactorings were present in the Services package, but not so many that it was difficult to begin refactoring.
+Some minor issues with readability were caused by chaining of calls and suboptimal function and variable names, but most of the difficulty of understanding this architecture came from its sheer size.
+There are many different moving parts, and each one seems to be justified in its separation from other parts.
+There were no applicable standards with the services package components, to the best of my knowledge.
+
+Despite the code base's relatively good architecture, the amount of possible refactorings did add up to some issues with robustness and modifiability.
+We saw that there was an unsafe null that occurs with `Gson().fromJson()` which would have been a very difficult bug to root out if I hadn't happened upon it by coincidence while testing.
+I was surprised to find that my refactoring led to such a large change as creating a new module `RecognitionJsonResponse`.
+This seems to me like very strong evidence of what was said in course reading, that architecture can be improved in large ways through a thoughtful set of refactorings.
+To me, it was almost as though the new module had simply fallen in my lap after I loosened it with the smaller refactorings I applied along the way.
+The fact that `RecognitionJsonResponse` can now be implemented in most any way with minimal change to `FirebaseFunctionsService` is proof that there was a deficiency in modifiability before separating this new class out from `FirebaseFunctionsService`.
